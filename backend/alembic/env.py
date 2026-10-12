@@ -11,7 +11,7 @@ from alembic import context
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.config import settings
-from app.database import Base
+from app.database import Base, engine
 import app.models  # Ensure all models are loaded
 
 # this is the Alembic Config object, which provides
@@ -44,19 +44,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
-
-    connect_args = {}
-    if settings.DATABASE_URL.startswith("sqlite"):
-        connect_args["check_same_thread"] = False
-
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-        connect_args=connect_args,
-    )
+    connectable = engine
 
     with connectable.connect() as connection:
         context.configure(
