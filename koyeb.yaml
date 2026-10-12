@@ -1,0 +1,14 @@
+name: studypilot-backend
+type: web
+env:
+  ENVIRONMENT: production
+  PORT: "8000"
+  LLM_PROVIDER: mock
+regions:
+  - fra
+instance_type: free
+docker:
+  dockerfile: backend/Dockerfile
+health_checks:
+  - path: /health
+    port: 8000

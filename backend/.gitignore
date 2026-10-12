@@ -1,0 +1,26 @@
+# Virtual Environments
+.venv/
+venv/
+ENV/
+
+# Python Cache & Testing
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Uploaded Files
+storage/materials/*
+!storage/materials/.gitkeep

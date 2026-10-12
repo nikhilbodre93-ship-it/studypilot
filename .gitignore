@@ -1,0 +1,64 @@
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# SQLite Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Binaries, Executables & Compressed Archives
+*.exe
+*.dll
+*.so
+*.dylib
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+cloudflared.exe
+studypilot.zip
+
+# Third-party Runtimes & SDKs
+oracleJdk*/
+*jdk*/
+*Jdk*/
+
+# Node & Frontend Build Artifacts
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Storage & Uploaded User Content
+storage/materials/*
+!storage/materials/.gitkeep
+backend/storage/materials/*
+!backend/storage/materials/.gitkeep
+
+# IDE & Editor Configs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
