@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://studypilot-2blk.onrender.com/api/:path*"
+      "destination": "https://rest-relating-donors-conditioning.trycloudflare.com/api/:path*"
     },
     {
       "source": "/(.*)",
