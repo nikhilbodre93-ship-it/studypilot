@@ -24,6 +24,14 @@ except Exception as e:
     except Exception as inner_e:
         print(f"Table verification note: {inner_e}", flush=True)
 
+# 2. Automatically ensure demo account and seed data exist
+try:
+    from app.seed import seed_database
+    seed_database()
+    print("Demo account & initial study data initialized successfully.", flush=True)
+except Exception as seed_err:
+    print(f"Seed note: {seed_err}", flush=True)
+
 # 2. Determine target port safely
 raw_port = os.environ.get("PORT", "10000")
 try:
