@@ -57,7 +57,30 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         toast("Welcome back!", "success");
       }
     } catch (err: any) {
-      const msg = err?.error?.message || err?.detail || err?.message || "Authentication failed";
+      const rawMsg = err?.error?.message || err?.detail || err?.message;
+      let msg = rawMsg || "Authentication failed";
+      if (rawMsg === "Failed to fetch" || (typeof rawMsg === "string" && rawMsg.toLowerCase().includes("network"))) {
+        msg = "Unable to connect to backend server. Make sure the API server is running on http://localhost:8000.";
+      }
+      toast(msg, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickDemoLogin = async () => {
+    setEmail("demo@studypilot.io");
+    setPassword("StudyPilot2026!");
+    setIsSubmitting(true);
+    try {
+      await login("demo@studypilot.io", "StudyPilot2026!");
+      toast("Welcome back!", "success");
+    } catch (err: any) {
+      const rawMsg = err?.error?.message || err?.detail || err?.message;
+      let msg = rawMsg || "Authentication failed";
+      if (rawMsg === "Failed to fetch" || (typeof rawMsg === "string" && rawMsg.toLowerCase().includes("network"))) {
+        msg = "Unable to connect to backend server. Make sure the API server is running on http://localhost:8000.";
+      }
       toast(msg, "error");
     } finally {
       setIsSubmitting(false);
@@ -121,11 +144,42 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <h2 className="text-2xl font-bold text-[#1F2A24] mt-1 mb-1">
               {mode === "register" ? "Create your account" : "Sign in to your space"}
             </h2>
-            <p className="text-xs text-[#607166] mb-6">
+            <p className="text-xs text-[#607166] mb-5">
               {mode === "register"
                 ? "A few details and you're ready to begin."
                 : "Enter your credentials to continue your revision."}
             </p>
+
+            {mode === "login" && (
+              <div className="mb-4 p-3.5 rounded-xl bg-[#EBF2EC] border border-[#D7DEC5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div>
+                  <p className="text-xs font-semibold text-[#1F2A24] flex items-center gap-1.5">
+                    <span>⚡</span> Demo Account
+                  </p>
+                  <p className="text-[11px] text-[#607166]">demo@studypilot.io • StudyPilot2026!</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail("demo@studypilot.io");
+                      setPassword("StudyPilot2026!");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-[#D7DEC5] text-[#2F5D46] hover:bg-[#F4F6F1] text-[11px] font-semibold transition-colors"
+                  >
+                    Fill
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleQuickDemoLogin}
+                    className="px-2.5 py-1 rounded-lg bg-[#2F5D46] hover:bg-[#254B38] text-white text-[11px] font-semibold transition-colors disabled:opacity-50"
+                  >
+                    1-Click Sign In
+                  </button>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "register" && (

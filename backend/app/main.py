@@ -137,6 +137,11 @@ from app import models as _models
 
 try:
     Base.metadata.create_all(bind=engine)
+    try:
+        from app.seed import seed_database
+        seed_database()
+    except Exception as seed_err:
+        logger.warning(f"Seed verification notice: {seed_err}")
 except Exception as e:
     logger.warning(f"Database table verification notice: {e}")
 

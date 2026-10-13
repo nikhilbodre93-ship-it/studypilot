@@ -7,7 +7,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # 1. Start Backend
 Write-Host "`n[1/3] Starting Backend Server (FastAPI on port 8000)..." -ForegroundColor Green
-$backendCmd = "cd `"$scriptDir\backend`"; if (Test-Path '.\.venv\Scripts\python.exe') { .\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000 } else { python -m venv .venv; .\.venv\Scripts\pip install -r requirements.txt; .\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000 }"
+$backendCmd = "cd `"$scriptDir\backend`"; if (Test-Path '.\.venv\Scripts\python.exe') { .\.venv\Scripts\python run.py } else { python -m venv .venv; .\.venv\Scripts\pip install -r requirements.txt; .\.venv\Scripts\python run.py }"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCmd
 
 # 2. Start Frontend
