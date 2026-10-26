@@ -22,5 +22,5 @@ echo ======================================================================
 echo Look for your public URL below (https://*.trycloudflare.com):
 echo ======================================================================
 echo.
-cloudflared.exe tunnel --url http://localhost:5173
+cloudflared.exe tunnel --protocol http2 --url http://localhost:5173
 pause
