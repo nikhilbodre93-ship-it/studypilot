@@ -17,6 +17,6 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        value: sqlite:///./studypilot.db
       - key: BACKEND_CORS_ORIGINS
-        sync: false
+        value: "*"
