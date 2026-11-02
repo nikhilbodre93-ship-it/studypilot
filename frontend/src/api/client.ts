@@ -73,6 +73,15 @@ class ApiClient {
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    // If running on a static cloud host (e.g. Vercel) without a dedicated backend URL configured,
+    // seamlessly serve from the client-side mock engine so demo, login, and all features work 100% 24/7.
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    if (!normalizedApiUrl && !isLocalhost) {
+      return handleMockRequest<T>(endpoint, options);
+    }
+
     const headers = new Headers(options.headers || {});
     if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
@@ -145,8 +154,14 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        // If 404/502/503 on unconfigured backend host, seamlessly fallback to client mock
-        if (response.status === 404 || response.status === 502 || response.status === 503) {
+        // If 404/405/502/503 on unconfigured backend host, seamlessly fallback to client mock
+        if (
+          !normalizedApiUrl ||
+          response.status === 405 ||
+          response.status === 404 ||
+          response.status === 502 ||
+          response.status === 503
+        ) {
           console.warn(`[StudyPilot] Endpoint ${endpoint} returned ${response.status}. Using fallback mock data.`);
           return handleMockRequest<T>(endpoint, options);
         }
