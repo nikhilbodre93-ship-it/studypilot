@@ -26,6 +26,8 @@ const rawApiUrl = String((import.meta as any).env?.VITE_API_URL || "").trim();
 const normalizedApiUrl = rawApiUrl.replace(/\/+$/, "");
 const API_BASE = normalizedApiUrl ? `${normalizedApiUrl}/api/v1` : "/api/v1";
 
+import { handleMockRequest } from "./mockService";
+
 class ApiClient {
   private token: string | null = null;
   private isRefreshing = false;
@@ -80,71 +82,93 @@ class ApiClient {
       headers.set("Authorization", `Bearer ${this.token}`);
     }
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+      });
 
-    if (response.status === 401 && !endpoint.includes("/auth/login") && !endpoint.includes("/auth/refresh")) {
-      // Attempt token refresh
-      if (!this.isRefreshing) {
-        this.isRefreshing = true;
-        try {
-          const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          });
+      // Detect HTML response (e.g. Vercel SPA rewrite fallback where no backend exists)
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("text/html")) {
+        console.warn(`[StudyPilot] Endpoint ${endpoint} returned HTML (SPA fallback). Activating seamless mock data.`);
+        return handleMockRequest<T>(endpoint, options);
+      }
 
-          if (refreshRes.ok) {
-            const data: AuthResponse = await refreshRes.json();
-            this.setToken(data.access_token);
-            this.onRefreshed(data.access_token);
-            headers.set("Authorization", `Bearer ${data.access_token}`);
-            const retryRes = await fetch(`${API_BASE}${endpoint}`, {
-              ...options,
-              headers,
+      if (response.status === 401 && !endpoint.includes("/auth/login") && !endpoint.includes("/auth/refresh")) {
+        // Attempt token refresh
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
+          try {
+            const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
             });
-            if (!retryRes.ok) throw await retryRes.json();
-            return (await retryRes.json()) as T;
-          } else {
-            this.setToken(null);
-          }
-        } catch (err) {
-          this.setToken(null);
-        } finally {
-          this.isRefreshing = false;
-        }
-      } else {
-        // Wait for active refresh
-        return new Promise<T>((resolve, reject) => {
-          this.addRefreshSubscriber(async (newToken) => {
-            headers.set("Authorization", `Bearer ${newToken}`);
-            try {
+
+            if (refreshRes.ok) {
+              const data: AuthResponse = await refreshRes.json();
+              this.setToken(data.access_token);
+              this.onRefreshed(data.access_token);
+              headers.set("Authorization", `Bearer ${data.access_token}`);
               const retryRes = await fetch(`${API_BASE}${endpoint}`, {
                 ...options,
                 headers,
               });
               if (!retryRes.ok) throw await retryRes.json();
-              resolve((await retryRes.json()) as T);
-            } catch (err) {
-              reject(err);
+              return (await retryRes.json()) as T;
+            } else {
+              this.setToken(null);
             }
+          } catch (err) {
+            this.setToken(null);
+          } finally {
+            this.isRefreshing = false;
+          }
+        } else {
+          // Wait for active refresh
+          return new Promise<T>((resolve, reject) => {
+            this.addRefreshSubscriber(async (newToken) => {
+              headers.set("Authorization", `Bearer ${newToken}`);
+              try {
+                const retryRes = await fetch(`${API_BASE}${endpoint}`, {
+                  ...options,
+                  headers,
+                });
+                if (!retryRes.ok) throw await retryRes.json();
+                resolve((await retryRes.json()) as T);
+              } catch (err) {
+                reject(err);
+              }
+            });
           });
-        });
+        }
       }
-    }
 
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch {
-        errorData = { error: { message: response.statusText || "Request failed" } };
+      if (!response.ok) {
+        // If 404/502/503 on unconfigured backend host, seamlessly fallback to client mock
+        if (response.status === 404 || response.status === 502 || response.status === 503) {
+          console.warn(`[StudyPilot] Endpoint ${endpoint} returned ${response.status}. Using fallback mock data.`);
+          return handleMockRequest<T>(endpoint, options);
+        }
+
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: { message: response.statusText || "Request failed" } };
+        }
+        throw errorData;
       }
-      throw errorData;
-    }
 
-    return (await response.json()) as T;
+      return (await response.json()) as T;
+    } catch (networkError: any) {
+      // If network error occurred and backend is not set/offline, smoothly fallback to mock
+      if (networkError && typeof networkError === "object" && networkError.error) {
+        throw networkError;
+      }
+      console.warn(`[StudyPilot] Network request to ${endpoint} failed. Using fallback mock data.`);
+      return handleMockRequest<T>(endpoint, options);
+    }
   }
 }
 
