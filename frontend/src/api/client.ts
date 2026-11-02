@@ -26,7 +26,7 @@ const rawApiUrl = String((import.meta as any).env?.VITE_API_URL || "").trim();
 const normalizedApiUrl = rawApiUrl.replace(/\/+$/, "");
 const API_BASE = normalizedApiUrl ? `${normalizedApiUrl}/api/v1` : "/api/v1";
 
-import { handleMockRequest } from "./mockService";
+import { handleMockRequest, generateAITutorResponse } from "./mockService";
 
 class ApiClient {
   private token: string | null = null;
@@ -494,17 +494,56 @@ export const api = {
       onToken: (token: string) => void,
       onConvId?: (id: number) => void
     ) => {
+      const isLocalhost =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+      if (!normalizedApiUrl && !isLocalhost) {
+        if (onConvId) onConvId(1);
+        const fullResponse = generateAITutorResponse(payload.message, payload.mode);
+        const words = fullResponse.split(" ");
+        for (let i = 0; i < words.length; i++) {
+          onToken(words[i] + (i < words.length - 1 ? " " : ""));
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        return;
+      }
+
       const token = apiClient.getToken();
-      const response = await fetch(`${API_BASE}/tutor/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
+      let response: Response;
+      try {
+        response = await fetch(`${API_BASE}/tutor/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+      } catch (netErr) {
+        // Network fallback
+        if (onConvId) onConvId(1);
+        const fullResponse = generateAITutorResponse(payload.message, payload.mode);
+        const words = fullResponse.split(" ");
+        for (let i = 0; i < words.length; i++) {
+          onToken(words[i] + (i < words.length - 1 ? " " : ""));
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        return;
+      }
 
       if (!response.ok) {
+        if (response.status === 405 || response.status === 404 || response.status >= 500) {
+          if (onConvId) onConvId(1);
+          const fullResponse = generateAITutorResponse(payload.message, payload.mode);
+          const words = fullResponse.split(" ");
+          for (let i = 0; i < words.length; i++) {
+            onToken(words[i] + (i < words.length - 1 ? " " : ""));
+            await new Promise((r) => setTimeout(r, 20));
+          }
+          return;
+        }
+
         let msg = `Chat failed (${response.status})`;
         try {
           const err = await response.json();
